@@ -2,19 +2,88 @@
 # Example SHARAD 3D array plane viewer
 
 # Libraries
+import argparse, sys, os
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 
-def parseargs():
-    #
-    # Default Values
-    #
-    # Input file
-    #
-    radar_volume_path = './PLANUM_BOREUM_3D_TIME.DAT'
-
-  return radar_volume_path, 
+def parseargs(prog, vers):
+  #
+  # Default Values
+  #
+  err = 0				# Error flag
+  rvs = [937,300,300]			# Radar volume size
+  rvp = './PLANUM_BOREUM_3D_TIME.DAT'   # Radar volume path
+  au = ['m','m','us']			# Axis units
+  ast = [189762,-498988,107.400];	# Axis start values
+  ai = [475, 475, 0.0375]		# Axis Intervals
+  #
+  # Information to map pixels in the file to coordinates (these names are the
+  # same as those used in the label)
+  # -- CONVERT TO READ LABEL FILE
+  #
+  lfp = 3101;				# Line first pixel
+  sfp = 1651;				# Sample first pixel
+  bfp = 0;				# Band first pixel
+  #
+  # specify the plane, in coordinate space
+  # 
+  xv = 'all';				# Default X value
+  yv = 'all';				# Default Y value
+  zv = 'all';				# Default Z value
+  #
+  # Initiate parser
+  #
+  parser = argparse.ArgumentParser(description=str(prog + ' ' + str(vers)))
+  #
+  # Optional Arguments
+  #
+  parser.add_argument('-rvp', nargs=1, default=rvp, type=str,
+		help="Path to the radar volume")
+  parser.add_argument('-xv', nargs=1, default=xv, 
+		help="X-value slice. Integer or all")
+  parser.add_argument('-yv', nargs=1, default=yv,
+		help="Y-value slice. Integer or all")
+  parser.add_argument('-zv', nargs=1, default=zv,
+		help="Z-value slice. Integer or all")
+  #
+  # Parse Arguments
+  #
+  args = parser.parse_args()
+  if args.xv != xv:
+    xv = int(args.xv[0])
+    if xv < lfp:
+      err = "X-Value must be greater than or equal to {}".format(str(lfp)) 
+  if args.yv != yv:
+    yv = int(args.yv[0])
+    if yv < sfp:
+      err = "Y-Value must be greater than or equal to {}".format(str(sfp)) 
+  if args.zv != zv:
+    zv = int(args.zv[0])
+    if zv < bfp:
+      err = "Y-Value must be greater than or equal to {}".format(str(bfp)) 
+  if args.rvp != rvp:
+    rvp = str(args.rvp[0])
+  #
+  # Error check
+  #
+  if (type(xv) is int and type(yv) is int) or (type(xv) is int and type(zv) is int) or (type(yv) is int and type(zv) is int):
+    err = 'ERROR: Only one dimension can be an integer. The other two must be "all".'
+  if (type(xv) is str and type(yv) is str and type(zv) is str):
+    err = 'ERROR: You must specify a singleton dimension'
+  if not os.path.isfile(rvp):
+    err = 'ERROR: Radar volume not found. Please check your path.'
+  #
+  # Print log results
+  #
+  print('----------------------------')
+  print('Radar Volume Size:\t{}'.format(rvs))
+  print('Radar Volume Path:\t{}'.format(rvp))
+  print('----- Plane Dimensions -----')
+  print('X-Values:\t{}'.format(str(xv)))
+  print('Y-Values:\t{}'.format(str(yv)))
+  print('Z-Values:\t{}'.format(str(zv)))
+  print('----------------------------')
+  return rvs, rvp, au, ast, ai, lfp, sfp, xv, yv, zv, err
 
 def readdata(radar_volume_path, radar_volume_size):
   #
@@ -24,65 +93,44 @@ def readdata(radar_volume_path, radar_volume_size):
   #
   # Reshape to datacube
   #
-  dc = np.reshape(datacube, radar_volume_size).transpose()   
+  dc = np.reshape(dc, radar_volume_size).transpose()   
   rvs_X = radar_volume_size[2]
   rvs_Y = radar_volume_size[1]
   rvs_Z = radar_volume_size[0]
   return dc, rvs_X, rvs_Y, rvs_Z 
   
 def main():
+  prog = "SHARAD 3D Plane Viewer"
+  vers = "1.0"
   #
   # Parse command line arguments and set default values
   #
-  radar_volume_path = parseargs()
+  [radar_volume_size, radar_volume_path, axis_unit, 
+    axis_start, axis_interval, line_first_pixel, sample_first_pixel,
+    x_value, y_value, z_value, err] = parseargs(prog, vers)
+  if err != 0:
+    print(err)
+    sys.exit()
   #
   # Read in the data volume
   #
-  datacube, radar_volume_size_X, radar_volume_size_Y, radar_volume_size_Z = 
-    readdata(radar_volume_path, radar_volume_size)
-  # ----------- enter parameters here ----------------
-  # Information about the input file
-  radar_volume_path = '/Users/mperry/OneDrive/Documents/Work/PSI/Projects/3D_Challenge/PLANUM_BOREUM_3D_TIME.DAT'
-  # Properties for each exis in [x,y,z] form
-#  radar_volume_size = [300,300,937]
-  radar_volume_size = [937,300,300] #Python workaround; put z dimension first
-  axis_unit = ['m','m','us']
-  axis_start = [189762,-498988,107.400];
-  axis_interval = [475, 475, 0.0375]
-  
-  # information to map pixels in the file to coordinates (these names are the
-  # same as those used in the label)
-  line_first_pixel = 3101;
-  sample_first_pixel = 1651;
-
-  # specify the plane, in coordinate space
-  X_value = 3101;
-  Y_value = 'all';
-  Z_value = 'all';
-
-  # ----------- end parameters -----------------------
-
-  datacube = np.fromfile(radar_volume_path, dtype='<f', count=-1)
-  datacube = np.reshape(datacube, radar_volume_size).transpose()
-
-  radar_volume_size_X = radar_volume_size[2]
-  radar_volume_size_Y = radar_volume_size[1]
-  radar_volume_size_Z = radar_volume_size[0]
+  [datacube, radar_volume_size_X, radar_volume_size_Y, \
+    radar_volume_size_Z] = readdata(radar_volume_path, radar_volume_size)
 
   # Z (time) always has indices indexed from zero
   band_first_pixel = 0;
 
-  if X_value == 'all':
-    X_value = np.arange(line_first_pixel, line_first_pixel + radar_volume_size_X)
-  if Y_value == 'all':
-    Y_value = np.arange(sample_first_pixel, sample_first_pixel + radar_volume_size_Y)
-  if Z_value == 'all':
-    Z_value = np.arange(band_first_pixel, band_first_pixel + radar_volume_size_Z)
+  if x_value == 'all':
+    x_value = np.arange(line_first_pixel, line_first_pixel + radar_volume_size_X)
+  if y_value == 'all':
+    y_value = np.arange(sample_first_pixel, sample_first_pixel + radar_volume_size_Y)
+  if z_value == 'all':
+    z_value = np.arange(band_first_pixel, band_first_pixel + radar_volume_size_Z)
   
   # translate to pixel space indices
-  X_value_filecoords = X_value - line_first_pixel
-  Y_value_filecoords = Y_value - sample_first_pixel
-  Z_value_filecoords = Z_value - band_first_pixel 
+  X_value_filecoords = x_value - line_first_pixel
+  Y_value_filecoords = y_value - sample_first_pixel
+  Z_value_filecoords = z_value - band_first_pixel 
   #
   # Put a more advance log print out here
   #
@@ -106,11 +154,11 @@ def main():
   # The transpose ensures that the first non-singleton dimension in the
   # squeezed matrix (in alpha order) will be interpreted as different
   # columns/x-values
-  if type(X_value) is int:
+  if type(x_value) is int:
     plane = np.squeeze(datacube[X_value_filecoords, Y_value_filecoords[0]:, Z_value_filecoords[0]:])
-  elif type(Y_value) is int:
+  elif type(y_value) is int:
     plane = np.squeeze(datacube[X_value_filecoords[0]:, Y_value_filecoords, Z_value_filecoords[0]:])
-  elif type(Z_value) is int:
+  elif type(z_value) is int:
     plane = np.squeeze(datacube[X_value_filecoords[0]:, Y_value_filecoords[0]:, Z_value_filecoords])
   plane = np.transpose(plane)
   
