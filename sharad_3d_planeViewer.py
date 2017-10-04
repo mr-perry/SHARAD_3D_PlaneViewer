@@ -83,7 +83,7 @@ def parseargs(prog, vers):
   print('Y-Values:\t{}'.format(str(yv)))
   print('Z-Values:\t{}'.format(str(zv)))
   print('----------------------------')
-  return rvs, rvp, au, ast, ai, lfp, sfp, xv, yv, zv, err
+  return rvs, rvp, au, ast, ai, lfp, sfp, bfp, xv, yv, zv, err
 
 def readdata(radar_volume_path, radar_volume_size):
   #
@@ -107,25 +107,25 @@ def main():
   #
   [radar_volume_size, radar_volume_path, axis_unit, 
     axis_start, axis_interval, line_first_pixel, sample_first_pixel,
-    x_value, y_value, z_value, err] = parseargs(prog, vers)
+    band_first_pixel, x_value, y_value, z_value, err] = parseargs(prog, vers)
   if err != 0:
     print(err)
-    sys.exit()
-  #
-  # Read in the data volume
-  #
-  [datacube, radar_volume_size_X, radar_volume_size_Y, \
-    radar_volume_size_Z] = readdata(radar_volume_path, radar_volume_size)
+    return
+  else:
+    #
+    # Read in the data volume
+    #
+    [datacube, radar_volume_size_X, radar_volume_size_Y, \
+      radar_volume_size_Z] = readdata(radar_volume_path, radar_volume_size)
 
-  # Z (time) always has indices indexed from zero
-  band_first_pixel = 0;
+    # Z (time) always has indices indexed from zero
 
-  if x_value == 'all':
-    x_value = np.arange(line_first_pixel, line_first_pixel + radar_volume_size_X)
-  if y_value == 'all':
-    y_value = np.arange(sample_first_pixel, sample_first_pixel + radar_volume_size_Y)
-  if z_value == 'all':
-    z_value = np.arange(band_first_pixel, band_first_pixel + radar_volume_size_Z)
+    if x_value == 'all':
+      x_value = np.arange(line_first_pixel, line_first_pixel + radar_volume_size_X)
+    if y_value == 'all':
+      y_value = np.arange(sample_first_pixel, sample_first_pixel + radar_volume_size_Y)
+    if z_value == 'all':
+      z_value = np.arange(band_first_pixel, band_first_pixel + radar_volume_size_Z)
   
   # translate to pixel space indices
   X_value_filecoords = x_value - line_first_pixel
